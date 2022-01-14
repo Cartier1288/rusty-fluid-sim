@@ -2,6 +2,7 @@ use crate::vectors::vec::*;
 use crate::vectors::vec_field::*;
 use std::mem::swap;
 
+const SPARSE_SOLVE_ACCURACY: usize = 15;
 
 pub struct fluid_c {
     pub N: usize,           // side-length of (square) container
@@ -71,7 +72,7 @@ impl fluid_c {
         let W = N + 2;
         let H = N + 2;
 
-        let mut field: vec_field<f32, 2> = vec_field::new(W, H, vec::new([1.0, 2.0]));
+        let mut field: vec_field<f32, 2> = vec_field::new(W, H, vec::new([1.0, 4.0]));
         let mut density: vec_field<f32, 1> = vec_field::new(W, H, vec::new([0.0]));
 
         for c in 1..=N {
@@ -81,6 +82,10 @@ impl fluid_c {
                     //     vec::new([0.5, 2.0]));
                     density.set(r,c,
                         vec::new([100.0]));
+                }
+                else {
+                    field.set(r,c,
+                        -field.at(r,c));
                 }
             }
         }
@@ -139,7 +144,7 @@ impl fluid_c {
 
                 let mut vel: vec<f32,2> = self.v_field.at(y,x).clone();
 
-                let norm: u32 = from_one_u8_rgb((self.density.at(y,x)[0] / 100.0 * u8::MAX as f32) as u8);
+                let norm: u32 = from_one_u8_rgb((self.density.at(y,x)[0] / 120.0 * u8::MAX as f32) as u8);
 
                 for dy in border..(cell-border) {
                     let depth = top + (dy*(cell*self.W));
@@ -237,7 +242,7 @@ impl fluid_c {
         next.set(self.N+1,0,        (next.at(self.N,0) + next.at(self.N+1,1)) * 0.5);     // bottom left
     }
 
-    fn sparse_solve<const M: usize>(&self, boundrev: bool, a: f32, d: f32, current: &vec_field<f32, M>, next: &mut vec_field<f32, M>, steps: u32) {
+    fn sparse_solve<const M: usize>(&self, boundrev: bool, a: f32, d: f32, current: &vec_field<f32, M>, next: &mut vec_field<f32, M>, steps: usize) {
         for _ in 0..steps {
             for r in 1..=self.N {
                 let depth: usize = r * self.W;
@@ -273,7 +278,7 @@ impl fluid_c {
         let a: f32 = dt * diff * self.N as f32 * self.N as f32;
         let d: f32 = 1.0 + 4.0*a;
 
-        self.sparse_solve(false, a, d, current, next, 20);
+        self.sparse_solve(false, a, d, current, next, SPARSE_SOLVE_ACCURACY);
     }
 
     /*
@@ -349,7 +354,7 @@ impl fluid_c {
         }
         self.enforceBound(false, &mut div);
 
-        self.sparse_solve(false, 1.0, 4.0, &div, &mut p, 20);
+        self.sparse_solve(false, 1.0, 4.0, &div, &mut p, SPARSE_SOLVE_ACCURACY);
 
         for r in 1..=self.N {
             let depth: usize = r * self.W;
@@ -386,6 +391,7 @@ impl fluid_c {
     fn advanceVelocity(&mut self, dt: f32) {
         // let mut from = vec_field::new(self.W, self.H, vec::new([0.0, 0.0]));
         let mut next = self.v_field.clone();
+        self.enforceBound(true, &mut next);
 
         // fluid_c::addSource(&from, &mut next, dt);
         // swap(&mut self.v_field, &mut next);
