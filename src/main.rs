@@ -53,13 +53,20 @@ fn main() {
         while win.is_open() {
             // let buffer = sim.render();
             // win.update_with_buffer(&buffer, W + 2, H + 2).unwrap();
+            let mut now = Instant::now();
+            let buffer = sim.renderVelocity(cell, 2); // render velocity buffer
+            let mut after = Instant::now();
+            println!("rendering took {:?}", after.duration_since(now));
 
-            let buffer = sim.renderVelocity(cell, 2);
+            now = Instant::now();
             win.update_with_buffer(&buffer, (W+2)*cell, (W+2)*cell).unwrap();
+            after = Instant::now();
+            println!("updating buffer took {:?}", after.duration_since(now));
 
-            thread::sleep(time::Duration::from_millis(10));
-
+            now = Instant::now();
             sim.advance(0.01);
+            after = Instant::now();
+            println!("dynamics took {:?}\n\n", after.duration_since(now));
         }
     }
     else {

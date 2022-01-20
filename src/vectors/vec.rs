@@ -6,9 +6,11 @@ use std::ops::Index;
 use std::ops::IndexMut;
 use std::ops::Neg;
 use std::ops::MulAssign;
+use std::ops::DivAssign;
+use std::ops::AddAssign;
 
-pub trait VecTrait<T>: Clone + Copy + Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T> {}
-impl<T> VecTrait<T> for T where T: Clone + Copy + Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T> {}
+pub trait VecTrait<T>: Clone + Copy + Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T> + MulAssign + DivAssign + AddAssign {}
+impl<T> VecTrait<T> for T where T: Clone + Copy + Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T> + MulAssign + DivAssign + AddAssign {}
 
 pub struct vec<T: VecTrait<T>, const N: usize> {
     val: [T; N]
@@ -45,7 +47,7 @@ Mul<T> for vec<T, N> {
         let mut new: vec<T, N> = self.clone();
 
         for i in 0..N {
-            new.val[i] = self[i] * _rhs;
+            new.val[i] *= _rhs;
         }
 
         return new;
@@ -60,7 +62,7 @@ Mul<T> for &vec<T, N> {
         let mut new: vec<T, N> = self.clone();
 
         for i in 0..N {
-            new.val[i] = self[i] * _rhs;
+            new.val[i] *= _rhs;
         }
 
         return new;
@@ -71,7 +73,7 @@ impl<T: VecTrait<T>, const N: usize>
 MulAssign<T> for vec<T, N> {
     fn mul_assign(&mut self, _rhs: T) {
         for i in 0..N {
-            self.val[i] = self.val[i] * _rhs;
+            self[i] *= _rhs;
         }
     }
 }
@@ -86,7 +88,7 @@ Div<T> for vec<T, N> {
         let mut new: vec<T, N> = self.clone();
 
         for i in 0..N {
-            new.val[i] = self[i] / _rhs;
+            new.val[i] /= _rhs;
         }
 
         return new;
@@ -101,10 +103,19 @@ Div<T> for &vec<T, N> {
         let mut new: vec<T, N> = self.clone();
 
         for i in 0..N {
-            new.val[i] = self[i] / _rhs;
+            new.val[i] /= _rhs;
         }
 
         return new;
+    }
+}
+
+impl<T: VecTrait<T>, const N: usize>
+DivAssign<T> for vec<T, N> {
+    fn div_assign(&mut self, _rhs: T) {
+        for i in 0..N {
+            self.val[i] /= _rhs;
+        }
     }
 }
 // == </Div operations> ==========================================================================//
@@ -145,7 +156,7 @@ impl<T: VecTrait<T>, const N: usize> Add<&vec<T, N>> for vec<T, N> {
         let mut new: vec<T, N> = self.clone();
 
         for i in 0..N {
-            new.val[i] = self[i] + _rhs[i];
+            new.val[i] += _rhs[i];
         }
 
         return new;
@@ -159,10 +170,28 @@ impl<T: VecTrait<T>, const N: usize> Add<&vec<T, N>> for &vec<T, N> {
         let mut new: vec<T, N> = self.clone();
 
         for i in 0..N {
-            new.val[i] = self[i] + _rhs[i];
+            new.val[i] += _rhs[i];
         }
 
         return new;
+    }
+}
+
+impl<T: VecTrait<T>, const N: usize>
+AddAssign<&vec<T,N>> for vec<T,N> {
+    fn add_assign(&mut self, _rhs: &vec<T,N>) {
+        for i in 0..N {
+            self.val[i] += _rhs[i];
+        }
+    }
+}
+
+impl<T: VecTrait<T>, const N: usize>
+AddAssign<T> for vec<T, N> {
+    fn add_assign(&mut self, _rhs: T) {
+        for i in 0..N {
+            self.val[i] += _rhs;
+        }
     }
 }
 // == </Add operations> ==========================================================================//
@@ -262,7 +291,7 @@ impl<T: VecTrait<T>, const N: usize> vec<T, N> {
     pub fn new(v: [T;N]) -> vec<T, N> {
         return vec {
             val: v
-        };
+        }
     }
 
     pub fn apply<F>(&mut self, f: F)

@@ -249,12 +249,13 @@ impl fluid_c {
                 for c in 1..=self.N {
                     let start: usize = depth + c;
                 
-                    next.setAtIndex(start,
-                        (current.atIndex(start)
-                         + ((next.at(r-1, c) + next.at(r+1, c)
-                             + next.at(r, c-1) + next.at(r, c+1)) * a))
-                        / d
-                    );
+                    let mut v = next.at(r-1, c).clone(); v += next.at(r+1, c);
+                    v += next.at(r, c-1); v += next.at(r, c+1);
+                    v *= a;
+                    v += current.atIndex(start);
+                    v /= d;
+
+                    next.setAtIndex(start, v);
                 }
             }
 
@@ -357,18 +358,10 @@ impl fluid_c {
         self.sparse_solve(false, 1.0, 4.0, &div, &mut p, SPARSE_SOLVE_ACCURACY);
 
         for r in 1..=self.N {
-            let depth: usize = r * self.W;
             for c in 1..=self.N {
-                let start: usize = depth + c;
-
-                let v: vec<f32, 2> = vec::new([
-                    (0.5/h) * (p.at(r,c+1)[0] - p.at(r, c-1)[0]),
-                    (0.5/h) * (p.at(r+1,c)[0] - p.at(r-1, c)[0])
-                ]);
-
-                next.set(r,c,
-                    next.at(r,c) - v
-                );
+                let v: &mut vec<f32,2> = next.atMut(r,c);
+                v[0] -= (0.5/h) * (p.at(r,c+1)[0] - p.at(r, c-1)[0]);
+                v[1] -= (0.5/h) * (p.at(r+1,c)[0] - p.at(r-1, c)[0]);
             }
         }
         self.enforceBound(true, next);

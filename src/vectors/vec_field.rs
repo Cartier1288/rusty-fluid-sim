@@ -52,11 +52,21 @@ impl<T: VecTrait<T>, const N: usize> vec_field<T, N> {
         return &self.field[i];
     }
 
+    pub fn atIndexMut(&mut self, i:usize) -> &mut vec<T, N> {
+        assert!(i < self.field.len());
+        return &mut self.field[i];
+    }
+
     // sets a single value of a vector of the field, assumes understanding
     // of the layout of field
     pub fn setAtIndex(&mut self, i: usize, v: vec<T, N>) {
         assert!(i < self.field.len());
         self.field[i] = v;
+    }
+
+    pub fn setAtIndexRef(&mut self, i: usize, v: &vec<T, N>) {
+        assert!(i < self.field.len());
+        self.field[i] = v.clone();
     }
 
     // sets a vector at (r,c)
